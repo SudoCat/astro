@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/server';
 import StaticHtml from './static-html.js';
+import { createHash } from 'node:crypto'
+import { serializeProps } from 'astro/internal/serialize.js';
 
 const slotName = (str) => str.trim().replace(/[-_]([a-z])/g, (_, w) => w.toUpperCase());
 const reactTypeof = Symbol.for('react.element');
@@ -57,6 +59,12 @@ async function getNodeWritable() {
 	return Writable;
 }
 
+function createHashIdentifier(props, metadata) {
+	const serializedObject = serializeProps(props, metadata)
+	const hash = createHash('md5').update(serializedObject).digest('hex');
+	return hash
+}
+
 async function renderToStaticMarkup(Component, props, { default: children, ...slotted }, metadata) {
 	delete props['class'];
 	const slots = {};
@@ -75,23 +83,26 @@ async function renderToStaticMarkup(Component, props, { default: children, ...sl
 	}
 	const vnode = React.createElement(Component, newProps);
 	let html;
+	const attrs = {
+		identifierPrefix: createHashIdentifier(newProps, metadata)
+	}
 	if (metadata && metadata.hydrate) {
 		if ('renderToReadableStream' in ReactDOM) {
-			html = await renderToReadableStreamAsync(vnode);
+			html = await renderToReadableStreamAsync(vnode, attrs);
 		} else {
-			html = await renderToPipeableStreamAsync(vnode);
+			html = await renderToPipeableStreamAsync(vnode, attrs);
 		}
 	} else {
 		if ('renderToReadableStream' in ReactDOM) {
-			html = await renderToReadableStreamAsync(vnode);
+			html = await renderToReadableStreamAsync(vnode, attrs);
 		} else {
-			html = await renderToStaticNodeStreamAsync(vnode);
+			html = await renderToStaticNodeStreamAsync(vnode, attrs);
 		}
 	}
-	return { html };
+	return { html, attrs };
 }
 
-async function renderToPipeableStreamAsync(vnode) {
+async function renderToPipeableStreamAsync(vnode, options) {
 	const Writable = await getNodeWritable();
 	let html = '';
 	return new Promise((resolve, reject) => {
@@ -114,15 +125,16 @@ async function renderToPipeableStreamAsync(vnode) {
 					})
 				);
 			},
+			...options
 		});
 	});
 }
 
-async function renderToStaticNodeStreamAsync(vnode) {
+async function renderToStaticNodeStreamAsync(vnode, attrs) {
 	const Writable = await getNodeWritable();
 	let html = '';
 	return new Promise((resolve, reject) => {
-		let stream = ReactDOM.renderToStaticNodeStream(vnode);
+		let stream = ReactDOM.renderToStaticNodeStream(vnode, attrs);
 		stream.on('error', (err) => {
 			reject(err);
 		});
@@ -164,8 +176,8 @@ async function readResult(stream) {
 	}
 }
 
-async function renderToReadableStreamAsync(vnode) {
-	return await readResult(await ReactDOM.renderToReadableStream(vnode));
+async function renderToReadableStreamAsync(vnode, options) {
+	return await readResult(await ReactDOM.renderToReadableStream(vnode, options));
 }
 
 export default {
