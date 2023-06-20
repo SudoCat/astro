@@ -1243,6 +1243,7 @@ export interface Internationalization {
 	defaultLocale: string;
 	locales: string[];
 	enableDefaultPrefix: boolean;
+	localizeEndpoints: boolean;
 	routeTranslations: Record<string, Record<string, string>>;
 }
 export interface AstroConfig extends z.output<typeof AstroConfigSchema> {

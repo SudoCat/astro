@@ -448,10 +448,11 @@ export function createRouteManifest(
 		});
 
 	if (config.i18n) {
-		const { locales, routeTranslations, defaultLocale, enableDefaultPrefix } = config.i18n;
+		const { locales, routeTranslations, defaultLocale, enableDefaultPrefix, localizeEndpoints } = config.i18n;
 		const localizationRedirects: RouteData[] = [];
 
 		routes = routes.reduce<RouteData[]>((all, data) => {
+			if (data.type === 'endpoint' && !localizeEndpoints) return all;
 			return all.concat(
 				locales.map((locale) => {
 					const localizeRoute = locale !== defaultLocale || enableDefaultPrefix;
@@ -542,10 +543,8 @@ export function createRouteManifest(
 			redirectRoute: routes.find((r) => r.route === to),
 		};
 
-		console.log(routeData);
-
 		// Push so that redirects are selected last.
-		// routes.push(routeData);
+		routes.push(routeData);
 	});
 
 	return {

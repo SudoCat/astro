@@ -99,6 +99,7 @@ export const AstroConfigSchema = z.object({
 	i18n: z.object({
 		defaultLocale: z.string(),
 		enableDefaultPrefix: z.boolean().optional().default(false),
+		localizeEndpoints: z.boolean().optional().default(false),
 		locales: z.array(z.string()),
 		routeTranslations: z.record(z.string(), z.record(z.string(), z.string()))
 	}).optional(),
