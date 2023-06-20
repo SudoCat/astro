@@ -1,0 +1,9 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+const { locale = 'us', spread } = Astro.params;
+---
+
+<Layout title="Test">
+	<h1>{locale} spread {spread}</h1>
+</Layout>

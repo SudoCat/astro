@@ -1239,11 +1239,19 @@ export interface InjectedRoute {
 	pattern: string;
 	entryPoint: string;
 }
+export interface Internationalization {
+	defaultLocale: string;
+	locales: string[];
+	enableDefaultPrefix: boolean;
+	localizeEndpoints: boolean;
+	routeTranslations: Record<string, Record<string, string>>;
+}
 export interface AstroConfig extends z.output<typeof AstroConfigSchema> {
 	// Public:
 	// This is a more detailed type than zod validation gives us.
 	// TypeScript still confirms zod validation matches this type.
 	integrations: AstroIntegration[];
+	i18n?: Internationalization;
 }
 
 export type ContentEntryModule = {
@@ -1837,6 +1845,7 @@ export interface RoutePart {
 	content: string;
 	dynamic: boolean;
 	spread: boolean;
+	locale?: string;
 }
 
 type RedirectConfig =

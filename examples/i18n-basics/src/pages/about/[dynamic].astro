@@ -1,0 +1,9 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+const { locale = 'us', dynamic } = Astro.params;
+---
+
+<Layout title="Test">
+	<h1>{locale} dyno {dynamic}</h1>
+</Layout>
