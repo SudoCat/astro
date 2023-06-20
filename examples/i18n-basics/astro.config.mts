@@ -6,6 +6,8 @@ export default defineConfig({
 	i18n: {
 		defaultLocale: 'us',
 		locales: ['us', 'fr'],
+		localizeEndpoints: false,
+		enableDefaultPrefix: false,
 		routeTranslations: {
 			fr: {
 				about: 'a-propos',

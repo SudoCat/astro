@@ -1251,7 +1251,7 @@ export interface AstroConfig extends z.output<typeof AstroConfigSchema> {
 	// This is a more detailed type than zod validation gives us.
 	// TypeScript still confirms zod validation matches this type.
 	integrations: AstroIntegration[];
-	i18n: Internationalization;
+	i18n?: Internationalization;
 }
 
 export type ContentEntryModule = {
@@ -1845,7 +1845,7 @@ export interface RoutePart {
 	content: string;
 	dynamic: boolean;
 	spread: boolean;
-	locale: string;
+	locale?: string;
 }
 
 type RedirectConfig =
