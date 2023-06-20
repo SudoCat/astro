@@ -80,7 +80,10 @@ function getPattern(
 					'\\/' +
 					segment
 						.map((part) => {
-							if (part.spread) {
+							if (part.locale) {
+								return `(${part.locale})`;
+							}
+							else if (part.spread) {
 								return '(.*?)';
 							} else if (part.dynamic) {
 								return '([^/]+?)';
@@ -243,7 +246,7 @@ export function createRouteManifest(
 	logging: LogOptions
 ): ManifestData {
 	const components: string[] = [];
-	const routes: RouteData[] = [];
+	let routes: RouteData[] = [];
 	const validPageExtensions: Set<string> = new Set([
 		'.astro',
 		...SUPPORTED_MARKDOWN_FILE_EXTENSIONS,
@@ -444,6 +447,63 @@ export function createRouteManifest(
 			});
 		});
 
+	if (config.i18n) {
+		const { locales, routeTranslations, defaultLocale, enableDefaultPrefix } = config.i18n;
+		const localizationRedirects: RouteData[] = [];
+
+		routes = routes.reduce<RouteData[]>((all, data) => {
+			return all.concat(
+				locales.map((locale) => {
+					const localizeRoute = locale !== defaultLocale || enableDefaultPrefix;
+					const segments = [...data.segments];
+					let { route } = data;
+					if (localizeRoute) {
+						segments.unshift([{ content: 'locale', dynamic: true, spread: false, locale }]);
+					}
+					if (routeTranslations?.[locale]) {
+						Object.entries(routeTranslations[locale]).forEach(([key, value]) => route = route.replace(key, value))
+						segments.forEach(outer => outer.map(inner => {
+							return {
+								...inner,
+								content: routeTranslations[locale]?.[inner.content] || inner.content
+							}
+						}))
+					}
+					if (!localizeRoute) {
+						data.segments = segments;
+						data.route = route;
+						return data;
+					}
+					const trailingSlash = data.type === 'page' ? settings.config.trailingSlash : 'never';
+					const localeRoute = {
+						...data,
+						segments,
+						route: `/[locale]${route}`,
+						params: ['locale', ...data.params],
+						generate: getRouteGenerator(segments, trailingSlash),
+						pattern: getPattern(segments, settings.config.base, trailingSlash),
+						pathname: undefined,
+					};
+					if (locale === defaultLocale && enableDefaultPrefix) {
+						localizationRedirects.push({
+							...data,
+							component: data.route,
+							type: 'redirect',
+							prerender: false,
+							redirect: `/${locale}${route}`,
+							redirectRoute: undefined,
+							// redirectRoute: localeRoute,
+						});
+					}
+					return localeRoute;
+				})
+			);
+		}, []);
+
+		// Add redirects at end of array
+		routes.push(...localizationRedirects);
+	}
+
 	Object.entries(settings.config.redirects).forEach(([from, to]) => {
 		const trailingSlash = config.trailingSlash;
 
@@ -482,8 +542,10 @@ export function createRouteManifest(
 			redirectRoute: routes.find((r) => r.route === to),
 		};
 
+		console.log(routeData);
+
 		// Push so that redirects are selected last.
-		routes.push(routeData);
+		// routes.push(routeData);
 	});
 
 	return {
